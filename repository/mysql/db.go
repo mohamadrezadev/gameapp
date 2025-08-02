@@ -20,8 +20,9 @@ type MySqlDb struct {
 }
 
 func New(config Config) *MySqlDb{
-	db,err:=sql.Open("myql",fmt.Sprintf("%s:%s@(%s:%d)%s",
-	config.Username,config.Password,config.Host,config.Port,config.DBName))
+		db, err := sql.Open("mysql", fmt.Sprintf("%s:%s@(%s:%d)/%s?parseTime=true",
+		config.Username, config.Password, config.Host, config.Port, config.DBName))
+	
 	if err!=nil{
 		panic(fmt.Errorf("cant open mysql db:%v ",err))
 	}

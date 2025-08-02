@@ -4,6 +4,7 @@ import (
 	"GameApp/entity"
 	"database/sql"
 	"fmt"
+	"time"
 )
 
 func (d *MySqlDb) IsPhoneNumberUinc(PhoneNumber string) (bool, error) {
@@ -56,10 +57,11 @@ func (d *MySqlDb) GetUserById(userId uint)(entity.User,error){
 }
 
 func scanUser(row *sql.Row) (entity.User, error) {
-	var createdAt []uint8
+	// var createdAt []uint8
+	var createdAt time.Time
 	var user entity.User
 
 	err := row.Scan(&user.ID, &user.Name, &user.PhoneNumber, &user.Password, &createdAt)
-
+	fmt.Println("createdAt", createdAt)
 	return user, err
 }

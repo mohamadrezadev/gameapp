@@ -53,6 +53,7 @@ func (s Service) Register(req RegisterRequest) (RegisterResponse, error) {
 		return RegisterResponse{}, fmt.Errorf("phone number is not valid")
 
 	}
+	
 	if isunique, err := s.repo.IsPhoneNumberUinc(req.PhoneNumber); err != nil || !isunique {
 		if err != nil {
 			return RegisterResponse{}, fmt.Errorf("unexpected error: %w", err)
