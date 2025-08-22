@@ -1,8 +1,9 @@
 package userservice
 
 import (
+	"GameApp/dto"
 	"GameApp/entity"
-	phonenumber "GameApp/pkg"
+	"GameApp/pkg/richerror"
 	"crypto/md5"
 	"encoding/hex"
 	"fmt"
@@ -12,68 +13,27 @@ import (
 )
 
 type Repository interface {
-	IsPhoneNumberUinc(PhoneNumber string) (bool, error)
+	IsPhoneNumberUnique(PhoneNumber string) (bool, error)
 	RegisterUser(u entity.User) (entity.User, error)
 	GetUserByPhoneNumber(PhoneNumber string) (entity.User, bool, error)
 	GetUserById(userId uint) (entity.User, error)
 }
 
-type AuthGenerator interface{
+type AuthGenerator interface {
 	CreateAccessToken(user entity.User) (string, error)
 	CreateRefreshToken(user entity.User) (string, error)
 }
 
 type Service struct {
 	auth AuthGenerator
-	repo    Repository
-}
-
-type RegisterRequest struct {
-	Name        string `json:"name"`
-	PhoneNumber string `json:"phone_number"`
-	Password    string `json:"password"`
-}
-
-type RegisterResponseUser struct {
-	ID          uint   `json:"id"`
-	PhoneNumber string `json:"phone_number"`
-	Name        string `json:"name"`
-}
-
-type RegisterResponse struct {
-	User RegisterResponseUser `json:"user"`
+	repo Repository
 }
 
 func New(repository Repository, auth AuthGenerator) Service {
 	return Service{repo: repository, auth: auth}
 }
 
-func (s Service) Register(req RegisterRequest) (RegisterResponse, error) {
-	if !phonenumber.IsValid(req.PhoneNumber) {
-		return RegisterResponse{}, fmt.Errorf("phone number is not valid")
-
-	}
-	
-	if isunique, err := s.repo.IsPhoneNumberUinc(req.PhoneNumber); err != nil || !isunique {
-		if err != nil {
-			return RegisterResponse{}, fmt.Errorf("unexpected error: %w", err)
-
-		}
-		if !isunique {
-			return RegisterResponse{}, fmt.Errorf("phonenumber is not unique")
-		}
-	}
-	//validte name
-	if len(req.Name) < 3 {
-		return RegisterResponse{}, fmt.Errorf("name length should be greater than 3")
-
-	}
-
-	// TODO - check the password with regex pattern
-	// validate password
-	if len(req.Password) < 8 {
-		return RegisterResponse{}, fmt.Errorf("password length should be greater than 8")
-	}
+func (s Service) Register(req dto.RegisterRequest) (dto.RegisterResponse, error) {
 
 	// TODO - replace md5 with bcrypt
 	user := entity.User{
@@ -84,13 +44,13 @@ func (s Service) Register(req RegisterRequest) (RegisterResponse, error) {
 	}
 	createduser, err := s.repo.RegisterUser(user)
 	if err != nil {
-		return RegisterResponse{}, fmt.Errorf("unexpected error: %w", err)
+		return dto.RegisterResponse{}, fmt.Errorf("unexpected error: %w", err)
 
 	}
-	return RegisterResponse{RegisterResponseUser{
+	return dto.RegisterResponse{User: dto.UserInfo{
 		ID:          createduser.ID,
-		Name:        createduser.Name,
-		PhoneNumber: createduser.PhoneNumber,
+		PhoneNumber: createduser.Name,
+		Name:        createduser.PhoneNumber,
 	}}, nil
 
 }
@@ -106,15 +66,20 @@ type LoginRequest struct {
 }
 
 type LoginResponse struct {
-	AccsessToken string `json:"access_token"`
-	RefreshToken string `json:"refresh_token"`
+	AccsessToken string       `json:"access_token"`
+	RefreshToken string       `json:"refresh_token"`
+	User         dto.UserInfo `json:"user"`
+	// Tokens Tokens       `json:"tokens"`
 }
 
 func (s Service) Login(req LoginRequest) (LoginResponse, error) {
 
+	const op = "userservice.Login"
+
 	user, exist, err := s.repo.GetUserByPhoneNumber(req.PhoneNumber)
 	if err != nil {
-		return LoginResponse{}, fmt.Errorf("unexpected error: %w", err)
+		return LoginResponse{}, richerror.New(op).WithErr(err).
+			WithMeta(map[string]interface{}{"phone_number": req.PhoneNumber})
 	}
 	if !exist {
 		return LoginResponse{}, fmt.Errorf("username or passwprd is not currect ")
@@ -129,12 +94,12 @@ func (s Service) Login(req LoginRequest) (LoginResponse, error) {
 		return LoginResponse{}, fmt.Errorf("unexpected error: %w", err)
 	}
 
-	refreshToken ,err:= s.auth.CreateRefreshToken(user)
+	refreshToken, err := s.auth.CreateRefreshToken(user)
 	if err != nil {
 		return LoginResponse{}, fmt.Errorf("unexpected error: %w", err)
 	}
 
-	return LoginResponse{AccsessToken: accessToken,RefreshToken: refreshToken}, nil
+	return LoginResponse{AccsessToken: accessToken, RefreshToken: refreshToken}, nil
 }
 
 type ProfileRequest struct {
@@ -146,9 +111,11 @@ type ProfileResponse struct {
 }
 
 func (s Service) Profile(req ProfileRequest) (ProfileResponse, error) {
+	const op = "userservice.Profile"
 	user, err := s.repo.GetUserById(req.UserId)
 	if err != nil {
-		return ProfileResponse{}, fmt.Errorf("unexpected error: %w", err)
+		return ProfileResponse{}, richerror.New(op).WithErr(err).
+			WithMeta(map[string]interface{}{"req": req})
 	}
 	return ProfileResponse{Name: user.Name}, nil
 }

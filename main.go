@@ -7,6 +7,7 @@ import (
 	"GameApp/repository/mysql"
 	"GameApp/services/authservice"
 	"GameApp/services/userservice"
+	"GameApp/validator/uservalidator"
 	"fmt"
 	"time"
 )
@@ -45,9 +46,9 @@ func main() {
 	mgr := migrator.New(cfg.Mysql)
 	mgr.Up()
 
-	authserv, userserv := setupServices(cfg)
+	authserv, userserv ,uservalidator:= setupServices(cfg)
 
-	server := httpserver.New(cfg, userserv, authserv)
+	server := httpserver.New(cfg, userserv, authserv,uservalidator)
 	server.Serv()
 
 	// mux := http.NewServeMux()
@@ -61,11 +62,13 @@ func main() {
 	// log.Fatal(server.ListenAndServe())
 }
 
-func setupServices(cfg config.Config) (authservice.Service, userservice.Service) {
+func setupServices(cfg config.Config) (authservice.Service, userservice.Service,uservalidator.Validator) {
 	authServ := authservice.New(cfg.Auth)
-	mySqlrepo := mysql.New(cfg.Mysql)
-	userServ := userservice.New(mySqlrepo, authServ)
-	return authServ, userServ
+	MysqlRepo  := mysql.New(cfg.Mysql)
+	userServ := userservice.New(MysqlRepo, authServ)
+	
+	uv:=uservalidator.New(MysqlRepo)
+	return authServ, userServ,uv
 }
 
 // func userRegisterHandler(writer http.ResponseWriter, req *http.Request) {
