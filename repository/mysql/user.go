@@ -9,7 +9,7 @@ import (
 	"time"
 )
 
-func (d *MySqlDb) IsPhoneNumberUnique(PhoneNumber string) (bool, error) {
+func (d *MySqlDb) IsPhoneNumberUnique(PhoneNumber string) ( bool, error) {
 
 	row := d.db.QueryRow(`select * from users where phone_number =? `, PhoneNumber)
 	_, err := scanUser(row)
@@ -34,19 +34,20 @@ func (d *MySqlDb) RegisterUser(u entity.User) (entity.User, error) {
 	return u, nil
 
 }
-func (d *MySqlDb) GetUserByPhoneNumber(PhoneNumber string) (entity.User, bool, error) {
+func (d *MySqlDb) GetUserByPhoneNumber(PhoneNumber string) (entity.User, error) {
 	const op = "mysql.GetUserByPhoneNumber"
 
 	row := d.db.QueryRow(`select * from users where phone_number =?`, PhoneNumber)
 	user, err := scanUser(row)
 	if err != nil {
 		if err == sql.ErrNoRows {
-			return entity.User{}, false, nil
+			return entity.User{}, richerror.New(op).WithErr(err).
+			WithMessage(errmsg.ErrorMsgNotFound).WithKind(richerror.KindNotFound)
 		}
-		return entity.User{}, false, richerror.New(op).WithErr(err).
+		return entity.User{}, richerror.New(op).WithErr(err).
 			WithMessage(errmsg.ErrorMsgCantScanQueryResult).WithKind(richerror.KindUnexpected)
 	}
-	return user, true, nil
+	return user, nil
 }
 
 func (d *MySqlDb) GetUserById(userId uint) (entity.User, error) {

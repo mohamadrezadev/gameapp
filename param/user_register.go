@@ -1,4 +1,4 @@
-package dto
+package param
 
 type RegisterRequest struct {
 	Name        string `json:"name"`
@@ -6,11 +6,7 @@ type RegisterRequest struct {
 	Password    string `json:"password"`
 }
 
-type UserInfo struct {
-	ID          uint   `json:"id"`
-	PhoneNumber string `json:"phone_number"`
-	Name        string `json:"name"`
-}
+
 
 type RegisterResponse struct {
 	User UserInfo `json:"user"`
