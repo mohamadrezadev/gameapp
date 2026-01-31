@@ -8,11 +8,11 @@ import (
 )
 
 type Config struct {
-	Username string
-	Password string
-	Port     int
-	Host     string
-	DBName   string
+	Username string 	`koanf:"username"`
+	Password string	    `koanf:"password"`
+	Port     int		`koanf:"port"`
+	Host     string	   `koanf:"host"`
+	DBName   string	   `koanf:"dbname"`
 }
 type MySqlDb struct {
 	Config Config

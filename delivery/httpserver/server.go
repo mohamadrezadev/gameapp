@@ -20,7 +20,7 @@ type Server struct {
 func New(config config.Config, userserv userservice.Service, authserv authservice.Service, uservalidator uservalidator.Validator) Server {
 	return Server{
 		config:      config,
-		userhandler: userhandler.New(authserv, userserv, uservalidator),
+		userhandler: userhandler.New(config.Auth, authserv, userserv, uservalidator),
 	}
 }
 

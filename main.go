@@ -22,6 +22,8 @@ const (
 
 func main() {
 	fmt.Println("start echo server")
+
+
 	cfg := config.Config{
 		HTTPServer: config.HTTPSrver{
 			Port: 7000,
@@ -37,19 +39,48 @@ func main() {
 		Mysql: mysql.Config{
 			Username: "gameapp",
 			Password: "gameappt0lk2o20",
-			Port:     3308,
+			Port:     5510,
 			Host:     "localhost",
 			DBName:   "gameapp_db",
 		},
 	}
 
+	cfg2:=config.Load("config.yml")
+	fmt.Printf("cfg2:%+v\n",cfg2)
+
 	mgr := migrator.New(cfg.Mysql)
 	mgr.Up()
 
-	authserv, userserv ,uservalidator:= setupServices(cfg)
+	authserv, userserv, uservalidator := setupServices(cfg)
 
-	server := httpserver.New(cfg, userserv, authserv,uservalidator)
+	server := httpserver.New(cfg, userserv, authserv, uservalidator)
 	server.Serv()
+
+}
+
+func setupServices(cfg config.Config) (authservice.Service, userservice.Service, uservalidator.Validator) {
+	authServ := authservice.New(cfg.Auth)
+	MysqlRepo := mysql.New(cfg.Mysql)
+	userServ := userservice.New(MysqlRepo, authServ)
+
+	uv := uservalidator.New(MysqlRepo)
+	return authServ, userServ, uv
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 	// mux := http.NewServeMux()
 	// mux.HandleFunc("/health-check", healthCheckHandler)
@@ -60,16 +91,6 @@ func main() {
 	// log.Println("server is listening  on port 7000... ")
 	// server := http.Server{Addr: ":7000", Handler: mux}
 	// log.Fatal(server.ListenAndServe())
-}
-
-func setupServices(cfg config.Config) (authservice.Service, userservice.Service,uservalidator.Validator) {
-	authServ := authservice.New(cfg.Auth)
-	MysqlRepo  := mysql.New(cfg.Mysql)
-	userServ := userservice.New(MysqlRepo, authServ)
-	
-	uv:=uservalidator.New(MysqlRepo)
-	return authServ, userServ,uv
-}
 
 // func userRegisterHandler(writer http.ResponseWriter, req *http.Request) {
 // 	if req.Method == http.MethodGet {
