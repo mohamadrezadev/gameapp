@@ -1,5 +1,5 @@
 production:
   dialect: mysql
-  datasource: gameapp:gameappt0lk2o20@(localhost:3308)/gameapp_db?parseTime=true
+  datasource: gameapp:gameappt0lk2o20@(localhost:5510)/gameapp_db?parseTime=true
   dir: repository/mysql/migrations
   table: migrations
